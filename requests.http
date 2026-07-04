@@ -1,0 +1,128 @@
+### BarterSwap — requêtes de test
+### Nécessite l'extension VSCode "REST Client" (humao.rest-client).
+### Cliquer sur "Send Request" au-dessus de chaque bloc pour l'exécuter.
+
+@baseUrl = http://localhost:8080
+
+### Ping
+GET {{baseUrl}}/ping
+
+
+### =========================================================
+### Utilisateurs
+### =========================================================
+
+### Créer un utilisateur (10 crédits de bienvenue attribués)
+# @name createUser
+POST {{baseUrl}}/api/users
+Content-Type: application/json
+
+{
+  "pseudo": "joshua",
+  "bio": "Développeur Go",
+  "ville": "Paris"
+}
+
+### Créer un utilisateur avec pseudo vide -> 400
+POST {{baseUrl}}/api/users
+Content-Type: application/json
+
+{
+  "pseudo": ""
+}
+
+### ID de l'utilisateur créé plus haut, réutilisé dans les requêtes suivantes
+@userId = {{createUser.response.body.$.id}}
+
+### Créer un second utilisateur (pour tester les cas d'accès refusé)
+# @name createOtherUser
+POST {{baseUrl}}/api/users
+Content-Type: application/json
+
+{
+  "pseudo": "alice",
+  "ville": "Lyon"
+}
+
+@otherUserId = {{createOtherUser.response.body.$.id}}
+
+### Récupérer le profil public
+GET {{baseUrl}}/api/users/{{userId}}
+
+### Récupérer un profil inexistant -> 404
+GET {{baseUrl}}/api/users/999999999
+
+### Modifier son profil (X-User-ID doit correspondre à {{userId}})
+PUT {{baseUrl}}/api/users/{{userId}}
+Content-Type: application/json
+X-User-ID: {{userId}}
+
+{
+  "pseudo": "joshua_updated",
+  "bio": "Développeur Go passionné",
+  "ville": "Nantes"
+}
+
+### Modifier le profil d'un autre utilisateur -> 403
+PUT {{baseUrl}}/api/users/{{userId}}
+Content-Type: application/json
+X-User-ID: {{otherUserId}}
+
+{
+  "pseudo": "usurpation"
+}
+
+### Modifier un profil sans header X-User-ID -> 401
+PUT {{baseUrl}}/api/users/{{userId}}
+Content-Type: application/json
+
+{
+  "pseudo": "sans_auth"
+}
+
+
+### =========================================================
+### Compétences
+### =========================================================
+
+### Récupérer les compétences (vide au départ)
+GET {{baseUrl}}/api/users/{{userId}}/skills
+
+### Définir ses compétences (écrase la liste existante)
+PUT {{baseUrl}}/api/users/{{userId}}/skills
+Content-Type: application/json
+X-User-ID: {{userId}}
+
+[
+  { "nom": "Jardinage", "niveau": "expert" },
+  { "nom": "Cuisine", "niveau": "débutant" }
+]
+
+### Niveau invalide -> 400
+PUT {{baseUrl}}/api/users/{{userId}}/skills
+Content-Type: application/json
+X-User-ID: {{userId}}
+
+[
+  { "nom": "Bricolage", "niveau": "pro" }
+]
+
+### Modifier les compétences d'un autre utilisateur -> 403
+PUT {{baseUrl}}/api/users/{{userId}}/skills
+Content-Type: application/json
+X-User-ID: {{otherUserId}}
+
+[
+  { "nom": "Musique", "niveau": "expert" }
+]
+
+
+### =========================================================
+### Statistiques
+### =========================================================
+
+### Statistiques de l'utilisateur
+GET {{baseUrl}}/api/users/{{userId}}/stats
+
+### Statistiques d'un utilisateur inexistant -> 404
+GET {{baseUrl}}/api/users/999999999/stats
