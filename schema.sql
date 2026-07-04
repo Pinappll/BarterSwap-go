@@ -37,6 +37,13 @@ CREATE TABLE exchanges (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Un service ne peut avoir qu'un seul échange en cours (pending/accepted) à
+-- la fois. Contrainte posée au niveau base de données (et non via un mutex
+-- applicatif) pour rester correcte sous accès concurrents.
+CREATE UNIQUE INDEX one_active_exchange_per_service
+    ON exchanges (service_id)
+    WHERE status IN ('pending', 'accepted');
+
 CREATE TABLE credit_transactions (
     id SERIAL PRIMARY KEY,
     user_id INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,

@@ -1,11 +1,39 @@
 package main
 
 import (
+	"database/sql"
 	"fmt"
 	"log"
 	"net/http"
 	"os"
 )
+
+// newRouter enregistre toutes les routes de l'API et les enveloppe dans la
+// chaîne de middlewares commune. Extrait de main() pour être réutilisé tel
+// quel par les tests d'intégration (httptest).
+func newRouter(db *sql.DB) http.Handler {
+	mux := http.NewServeMux()
+
+	mux.HandleFunc("GET /ping", func(w http.ResponseWriter, r *http.Request) {
+		writeJSON(w, http.StatusOK, map[string]string{"status": "ok"})
+	})
+
+	mux.HandleFunc("POST /api/users", HandleCreateUser(db))
+	mux.HandleFunc("GET /api/users/{id}", HandleGetUser(db))
+	mux.HandleFunc("PUT /api/users/{id}", HandleUpdateUser(db))
+	mux.HandleFunc("GET /api/users/{id}/skills", HandleGetSkills(db))
+	mux.HandleFunc("PUT /api/users/{id}/skills", HandlePutSkills(db))
+	mux.HandleFunc("GET /api/users/{id}/stats", HandleGetUserStats(db))
+
+	var handler http.Handler = mux
+	handler = withUserID(handler)
+	handler = withTimeout(handler)
+	handler = withCORS(handler)
+	handler = withLogging(handler)
+	handler = withRecovery(handler)
+
+	return handler
+}
 
 func main() {
 	host := os.Getenv("DB_HOST")
@@ -30,20 +58,9 @@ func main() {
 	}
 	defer db.Close()
 
-	mux := http.NewServeMux()
-
-	mux.HandleFunc("GET /ping", func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(`{"status": "ok"}`))
-	})
-
-	// --- NOUVELLE ROUTE ICI ---
-	mux.HandleFunc("POST /api/users", HandleCreateUser(db))
-	// --------------------------
-
 	server := &http.Server{
 		Addr:    ":8080",
-		Handler: mux,
+		Handler: newRouter(db),
 	}
 
 	fmt.Println("🚀 Serveur démarré sur http://localhost:8080")

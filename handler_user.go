@@ -2,8 +2,6 @@ package main
 
 import (
 	"database/sql"
-	"encoding/json"
-	"errors"
 	"net/http"
 )
 
@@ -11,23 +9,64 @@ func HandleCreateUser(db *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var user User
 
-		if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
-			http.Error(w, `{"error": "JSON invalide"}`, http.StatusBadRequest)
+		if err := decodeJSON(r, &user); err != nil {
+			writeError(w, err)
 			return
 		}
 
-		err := CreateUserService(db, &user)
+		if err := RegisterUser(r.Context(), db, &user); err != nil {
+			writeError(w, err)
+			return
+		}
+
+		writeJSON(w, http.StatusCreated, user)
+	}
+}
+
+func HandleGetUser(db *sql.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		id, err := parseIDParam(r, "id")
 		if err != nil {
-			if errors.Is(err, ErrInvalidInput) {
-				http.Error(w, `{"error": "Le pseudo est obligatoire"}`, http.StatusBadRequest)
-				return
-			}
-			http.Error(w, `{"error": "Erreur interne du serveur"}`, http.StatusInternalServerError)
+			writeError(w, err)
 			return
 		}
 
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusCreated)
-		json.NewEncoder(w).Encode(user)
+		user, err := GetUserProfile(r.Context(), db, id)
+		if err != nil {
+			writeError(w, err)
+			return
+		}
+
+		writeJSON(w, http.StatusOK, user)
+	}
+}
+
+func HandleUpdateUser(db *sql.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		id, err := parseIDParam(r, "id")
+		if err != nil {
+			writeError(w, err)
+			return
+		}
+
+		requesterID, ok := userIDFromContext(r.Context())
+		if !ok {
+			writeError(w, ErrUnauthorized)
+			return
+		}
+
+		var update User
+		if err := decodeJSON(r, &update); err != nil {
+			writeError(w, err)
+			return
+		}
+
+		user, err := UpdateUserProfile(r.Context(), db, id, requesterID, update)
+		if err != nil {
+			writeError(w, err)
+			return
+		}
+
+		writeJSON(w, http.StatusOK, user)
 	}
 }
