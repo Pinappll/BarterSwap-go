@@ -25,6 +25,12 @@ func newRouter(db *sql.DB) http.Handler {
 	mux.HandleFunc("PUT /api/users/{id}/skills", HandlePutSkills(db))
 	mux.HandleFunc("GET /api/users/{id}/stats", HandleGetUserStats(db))
 
+	mux.HandleFunc("GET /api/services", HandleListServices(db))
+	mux.HandleFunc("POST /api/services", HandleCreateService(db))
+	mux.HandleFunc("GET /api/services/{id}", HandleGetService(db))
+	mux.HandleFunc("PUT /api/services/{id}", HandleUpdateService(db))
+	mux.HandleFunc("DELETE /api/services/{id}", HandleDeleteService(db))
+
 	var handler http.Handler = mux
 	handler = withUserID(handler)
 	handler = withTimeout(handler)
