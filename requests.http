@@ -126,3 +126,119 @@ GET {{baseUrl}}/api/users/{{userId}}/stats
 
 ### Statistiques d'un utilisateur inexistant -> 404
 GET {{baseUrl}}/api/users/999999999/stats
+
+
+### =========================================================
+### Services (annonces)
+### =========================================================
+### {{userId}} possède les compétences Jardinage/Cuisine définies plus haut.
+
+### Créer un service SANS la compétence requise -> 400
+POST {{baseUrl}}/api/services
+Content-Type: application/json
+X-User-ID: {{userId}}
+
+{
+  "titre": "Cours de guitare",
+  "categorie": "Musique",
+  "duree_minutes": 60,
+  "credits": 2
+}
+
+### Créer un service sans header X-User-ID -> 401
+POST {{baseUrl}}/api/services
+Content-Type: application/json
+
+{
+  "titre": "x",
+  "categorie": "Jardinage",
+  "duree_minutes": 30,
+  "credits": 1
+}
+
+### Créer un service avec une catégorie hors liste fermée -> 400
+POST {{baseUrl}}/api/services
+Content-Type: application/json
+X-User-ID: {{userId}}
+
+{
+  "titre": "Yoga",
+  "categorie": "Yoga",
+  "duree_minutes": 30,
+  "credits": 1
+}
+
+### Créer un service avec la compétence requise (Jardinage) -> 201
+# @name createService
+POST {{baseUrl}}/api/services
+Content-Type: application/json
+X-User-ID: {{userId}}
+
+{
+  "titre": "Taille de haie",
+  "description": "Je taille vos haies et arbustes",
+  "categorie": "Jardinage",
+  "duree_minutes": 90,
+  "credits": 3,
+  "ville": "Nantes"
+}
+
+@serviceId = {{createService.response.body.$.id}}
+
+### Détail d'un service
+GET {{baseUrl}}/api/services/{{serviceId}}
+
+### Détail d'un service inexistant -> 404
+GET {{baseUrl}}/api/services/999999999
+
+### Liste de tous les services actifs
+GET {{baseUrl}}/api/services
+
+### Filtrer par catégorie
+GET {{baseUrl}}/api/services?categorie=Jardinage
+
+### Filtrer par ville (insensible à la casse)
+GET {{baseUrl}}/api/services?ville=nantes
+
+### Recherche textuelle (titre/description)
+GET {{baseUrl}}/api/services?search=haie
+
+### Combiner plusieurs filtres
+GET {{baseUrl}}/api/services?categorie=Jardinage&ville=Nantes
+
+### Modifier son annonce
+PUT {{baseUrl}}/api/services/{{serviceId}}
+Content-Type: application/json
+X-User-ID: {{userId}}
+
+{
+  "titre": "Taille de haie premium",
+  "description": "Service haut de gamme",
+  "categorie": "Jardinage",
+  "duree_minutes": 120,
+  "credits": 4,
+  "ville": "Nantes"
+}
+
+### Modifier l'annonce d'un autre utilisateur -> 403
+PUT {{baseUrl}}/api/services/{{serviceId}}
+Content-Type: application/json
+X-User-ID: {{otherUserId}}
+
+{
+  "titre": "hack",
+  "categorie": "Jardinage",
+  "duree_minutes": 30,
+  "credits": 1
+}
+
+### Supprimer l'annonce d'un autre utilisateur -> 403
+DELETE {{baseUrl}}/api/services/{{serviceId}}
+X-User-ID: {{otherUserId}}
+
+### Supprimer son annonce -> 204
+DELETE {{baseUrl}}/api/services/{{serviceId}}
+X-User-ID: {{userId}}
+
+### Vérifier la suppression -> 404
+GET {{baseUrl}}/api/services/{{serviceId}}
