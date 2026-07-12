@@ -242,3 +242,196 @@ X-User-ID: {{userId}}
 
 ### Vérifier la suppression -> 404
 GET {{baseUrl}}/api/services/{{serviceId}}
+
+
+### =========================================================
+### Échanges
+### =========================================================
+### {{userId}} = offreur (a la compétence Jardinage), {{otherUserId}} = demandeur.
+### Un service dédié est recréé ici car celui du bloc précédent a été supprimé.
+
+### @name createExchangeService
+POST {{baseUrl}}/api/services
+Content-Type: application/json
+X-User-ID: {{userId}}
+
+{
+  "titre": "Taille de haie (pour échange)",
+  "categorie": "Jardinage",
+  "duree_minutes": 60,
+  "credits": 3,
+  "ville": "Nantes"
+}
+
+@exchangeServiceId = {{createExchangeService.response.body.$.id}}
+
+### Auto-échange -> 400
+POST {{baseUrl}}/api/exchanges
+Content-Type: application/json
+X-User-ID: {{userId}}
+
+{ "service_id": {{exchangeServiceId}} }
+
+### Créer une demande d'échange -> 201 pending
+# @name createExchange
+POST {{baseUrl}}/api/exchanges
+Content-Type: application/json
+X-User-ID: {{otherUserId}}
+
+{ "service_id": {{exchangeServiceId}} }
+
+@exchangeId = {{createExchange.response.body.$.id}}
+
+### Second échange sur le même service -> 409 (une seule réservation active à la fois)
+POST {{baseUrl}}/api/exchanges
+Content-Type: application/json
+X-User-ID: {{otherUserId}}
+
+{ "service_id": {{exchangeServiceId}} }
+
+### Détail de l'échange (participant autorisé)
+GET {{baseUrl}}/api/exchanges/{{exchangeId}}
+X-User-ID: {{userId}}
+
+### Liste de mes échanges (demandeur)
+GET {{baseUrl}}/api/exchanges
+X-User-ID: {{otherUserId}}
+
+### Filtrer par statut
+GET {{baseUrl}}/api/exchanges?status=pending
+X-User-ID: {{otherUserId}}
+
+### Accepter par le mauvais utilisateur (le demandeur lui-même) -> 403
+PUT {{baseUrl}}/api/exchanges/{{exchangeId}}/accept
+X-User-ID: {{otherUserId}}
+
+### Accepter par l'offreur -> 200, crédits bloqués côté demandeur
+PUT {{baseUrl}}/api/exchanges/{{exchangeId}}/accept
+X-User-ID: {{userId}}
+
+### Vérifier le solde du demandeur (10 - 3 = 7)
+GET {{baseUrl}}/api/users/{{otherUserId}}
+
+### L'offreur tente de se valider lui-même -> 403 (seul le demandeur confirme)
+PUT {{baseUrl}}/api/exchanges/{{exchangeId}}/complete
+X-User-ID: {{userId}}
+
+### Le demandeur marque l'échange comme terminé -> 200, crédits transférés
+PUT {{baseUrl}}/api/exchanges/{{exchangeId}}/complete
+X-User-ID: {{otherUserId}}
+
+### Vérifier le solde de l'offreur (+3 crédits)
+GET {{baseUrl}}/api/users/{{userId}}
+
+
+### --- Flux annulation (après acceptation) : remboursement ---
+
+# @name createServiceForCancel
+POST {{baseUrl}}/api/services
+Content-Type: application/json
+X-User-ID: {{userId}}
+
+{
+  "titre": "Service à annuler",
+  "categorie": "Jardinage",
+  "duree_minutes": 30,
+  "credits": 2
+}
+
+@cancelServiceId = {{createServiceForCancel.response.body.$.id}}
+
+# @name createExchangeForCancel
+POST {{baseUrl}}/api/exchanges
+Content-Type: application/json
+X-User-ID: {{otherUserId}}
+
+{ "service_id": {{cancelServiceId}} }
+
+@cancelExchangeId = {{createExchangeForCancel.response.body.$.id}}
+
+### Accepter (bloque les crédits)
+PUT {{baseUrl}}/api/exchanges/{{cancelExchangeId}}/accept
+X-User-ID: {{userId}}
+
+### Annuler (le demandeur ou l'offreur peuvent annuler)
+PUT {{baseUrl}}/api/exchanges/{{cancelExchangeId}}/cancel
+X-User-ID: {{otherUserId}}
+
+### Vérifier que le solde du demandeur est bien remboursé
+GET {{baseUrl}}/api/users/{{otherUserId}}
+
+
+### --- Flux refus (depuis pending, rien à rembourser) ---
+
+# @name createServiceForReject
+POST {{baseUrl}}/api/services
+Content-Type: application/json
+X-User-ID: {{userId}}
+
+{
+  "titre": "Service à refuser",
+  "categorie": "Jardinage",
+  "duree_minutes": 30,
+  "credits": 1
+}
+
+@rejectServiceId = {{createServiceForReject.response.body.$.id}}
+
+# @name createExchangeForReject
+POST {{baseUrl}}/api/exchanges
+Content-Type: application/json
+X-User-ID: {{otherUserId}}
+
+{ "service_id": {{rejectServiceId}} }
+
+@rejectExchangeId = {{createExchangeForReject.response.body.$.id}}
+
+### Refuser la demande
+PUT {{baseUrl}}/api/exchanges/{{rejectExchangeId}}/reject
+X-User-ID: {{userId}}
+
+
+### =========================================================
+### Avis
+### =========================================================
+
+### Noter un échange non terminé (annulé) -> 400
+POST {{baseUrl}}/api/exchanges/{{cancelExchangeId}}/review
+Content-Type: application/json
+X-User-ID: {{otherUserId}}
+
+{ "note": 5 }
+
+### Note hors 1-5 -> 400
+POST {{baseUrl}}/api/exchanges/{{exchangeId}}/review
+Content-Type: application/json
+X-User-ID: {{otherUserId}}
+
+{ "note": 9 }
+
+### Le demandeur note l'offreur -> 201
+POST {{baseUrl}}/api/exchanges/{{exchangeId}}/review
+Content-Type: application/json
+X-User-ID: {{otherUserId}}
+
+{ "note": 5, "commentaire": "Travail impeccable" }
+
+### Noter deux fois le même échange -> 400
+POST {{baseUrl}}/api/exchanges/{{exchangeId}}/review
+Content-Type: application/json
+X-User-ID: {{otherUserId}}
+
+{ "note": 3 }
+
+### L'offreur note aussi le demandeur -> 201
+POST {{baseUrl}}/api/exchanges/{{exchangeId}}/review
+Content-Type: application/json
+X-User-ID: {{userId}}
+
+{ "note": 4, "commentaire": "Client sérieux" }
+
+### Avis reçus par l'offreur
+GET {{baseUrl}}/api/users/{{userId}}/reviews
+
+### Avis sur le service (uniquement ceux visant le prestataire, pas l'inverse)
+GET {{baseUrl}}/api/services/{{exchangeServiceId}}/reviews

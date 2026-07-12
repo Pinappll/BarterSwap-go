@@ -31,6 +31,18 @@ func newRouter(db *sql.DB) http.Handler {
 	mux.HandleFunc("PUT /api/services/{id}", HandleUpdateService(db))
 	mux.HandleFunc("DELETE /api/services/{id}", HandleDeleteService(db))
 
+	mux.HandleFunc("POST /api/exchanges", HandleCreateExchange(db))
+	mux.HandleFunc("GET /api/exchanges", HandleListExchanges(db))
+	mux.HandleFunc("GET /api/exchanges/{id}", HandleGetExchange(db))
+	mux.HandleFunc("PUT /api/exchanges/{id}/accept", HandleAcceptExchange(db))
+	mux.HandleFunc("PUT /api/exchanges/{id}/reject", HandleRejectExchange(db))
+	mux.HandleFunc("PUT /api/exchanges/{id}/complete", HandleCompleteExchange(db))
+	mux.HandleFunc("PUT /api/exchanges/{id}/cancel", HandleCancelExchange(db))
+	mux.HandleFunc("POST /api/exchanges/{id}/review", HandleCreateReview(db))
+
+	mux.HandleFunc("GET /api/users/{id}/reviews", HandleGetUserReviews(db))
+	mux.HandleFunc("GET /api/services/{id}/reviews", HandleGetServiceReviews(db))
+
 	var handler http.Handler = mux
 	handler = withUserID(handler)
 	handler = withTimeout(handler)
