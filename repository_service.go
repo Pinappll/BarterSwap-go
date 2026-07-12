@@ -27,7 +27,7 @@ func InsertService(ctx context.Context, db *sql.DB, s *Service) error {
 	).Scan(&s.ID, &s.CreatedAt)
 }
 
-func SelectServiceByID(ctx context.Context, db *sql.DB, id int) (*Service, error) {
+func SelectServiceByID(ctx context.Context, db querier, id int) (*Service, error) {
 	query := `
 		SELECT id, provider_id, titre, COALESCE(description, ''), categorie,
 		       duree_minutes, credits, COALESCE(ville, ''), actif, created_at
