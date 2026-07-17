@@ -17,6 +17,6 @@ func InitDB(dataSourceName string) (*sql.DB, error) {
 		return nil, err
 	}
 
-	fmt.Println("✅ Connexion à PostgreSQL réussie !")
+	fmt.Println("Connexion à PostgreSQL réussie !")
 	return db, nil
 }
