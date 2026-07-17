@@ -90,12 +90,16 @@ L'API est accessible sur http://localhost:8080.
 
 ## Exemples d'utilisation
 
-### 1. Créer un compte et consulter son profil
+### 1. Créer deux comptes et consulter un profil
 
 ```bash
 curl -s -X POST http://localhost:8080/api/users \
   -H "Content-Type: application/json" \
   -d '{"pseudo": "alice", "ville": "Nantes"}'
+
+curl -s -X POST http://localhost:8080/api/users \
+  -H "Content-Type: application/json" \
+  -d '{"pseudo": "bob"}'
 
 curl -s http://localhost:8080/api/users/1
 ```

@@ -35,9 +35,7 @@ func validateServiceInput(s Service) error {
 	return nil
 }
 
-// userHasSkill vérifie que la liste de compétences contient une compétence
-// dont le nom correspond à la catégorie de service visée (comparaison
-// insensible à la casse).
+
 func userHasSkill(skills []Skill, categorie string) bool {
 	for _, sk := range skills {
 		if strings.EqualFold(sk.Nom, categorie) {
@@ -47,8 +45,7 @@ func userHasSkill(skills []Skill, categorie string) bool {
 	return false
 }
 
-// CreateService publie une annonce pour providerID, à condition qu'il
-// possède une compétence correspondant à la catégorie visée.
+
 func CreateService(ctx context.Context, db *sql.DB, providerID int, input Service) (*Service, error) {
 	if err := validateServiceInput(input); err != nil {
 		return nil, err
@@ -87,9 +84,7 @@ func ListServices(ctx context.Context, db *sql.DB, filters ServiceFilters) ([]Se
 	return SelectServices(ctx, db, filters)
 }
 
-// UpdateServiceListing modifie une annonce existante, à condition que
-// requesterID en soit bien le propriétaire et que la nouvelle catégorie
-// corresponde toujours à une compétence qu'il possède.
+
 func UpdateServiceListing(ctx context.Context, db *sql.DB, id, requesterID int, update Service) (*Service, error) {
 	existing, err := SelectServiceByID(ctx, db, id)
 	if err != nil {
@@ -124,10 +119,7 @@ func UpdateServiceListing(ctx context.Context, db *sql.DB, id, requesterID int, 
 	return existing, nil
 }
 
-// DeleteServiceListing supprime une annonce, à condition que requesterID en
-// soit bien le propriétaire et qu'aucun échange pending/accepted ne porte
-// dessus (sinon la suppression en cascade effacerait la trace de crédits
-// déjà bloqués chez le demandeur, sans moyen de les lui restituer).
+
 func DeleteServiceListing(ctx context.Context, db *sql.DB, id, requesterID int) error {
 	existing, err := SelectServiceByID(ctx, db, id)
 	if err != nil {
