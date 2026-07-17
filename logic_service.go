@@ -125,7 +125,9 @@ func UpdateServiceListing(ctx context.Context, db *sql.DB, id, requesterID int, 
 }
 
 // DeleteServiceListing supprime une annonce, à condition que requesterID en
-// soit bien le propriétaire.
+// soit bien le propriétaire et qu'aucun échange pending/accepted ne porte
+// dessus (sinon la suppression en cascade effacerait la trace de crédits
+// déjà bloqués chez le demandeur, sans moyen de les lui restituer).
 func DeleteServiceListing(ctx context.Context, db *sql.DB, id, requesterID int) error {
 	existing, err := SelectServiceByID(ctx, db, id)
 	if err != nil {
@@ -133,6 +135,14 @@ func DeleteServiceListing(ctx context.Context, db *sql.DB, id, requesterID int) 
 	}
 	if err := requireOwner(existing.ProviderID, requesterID); err != nil {
 		return err
+	}
+
+	hasActiveExchange, err := ExistsActiveExchangeForService(ctx, db, id)
+	if err != nil {
+		return err
+	}
+	if hasActiveExchange {
+		return ErrServiceUnavailable
 	}
 
 	return DeleteService(ctx, db, id)

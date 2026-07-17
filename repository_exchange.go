@@ -82,6 +82,21 @@ func UpdateExchangeStatus(ctx context.Context, tx *sql.Tx, id int, status string
 	return err
 }
 
+// ExistsActiveExchangeForService indique si un service a un échange en
+// statut pending ou accepted. Utilisé pour empêcher la suppression d'un
+// service tant qu'un échange est en cours : sans ce garde-fou, la
+// suppression cascaderait sur exchanges puis credit_transactions (FK ON
+// DELETE CASCADE) et effacerait la trace de crédits déjà bloqués chez le
+// demandeur, sans aucun moyen de les lui restituer.
+func ExistsActiveExchangeForService(ctx context.Context, db querier, serviceID int) (bool, error) {
+	var exists bool
+	err := db.QueryRowContext(ctx,
+		`SELECT EXISTS(SELECT 1 FROM exchanges WHERE service_id = $1 AND status IN ('pending', 'accepted'))`,
+		serviceID,
+	).Scan(&exists)
+	return exists, err
+}
+
 // SelectExchangesForUser liste les échanges où l'utilisateur est demandeur ou
 // offreur, avec un filtre optionnel par statut.
 func SelectExchangesForUser(ctx context.Context, db *sql.DB, userID int, status string) ([]Exchange, error) {

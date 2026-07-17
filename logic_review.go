@@ -12,8 +12,7 @@ func validateNote(note int) error {
 	return nil
 }
 
-// CreateReview enregistre l'avis d'un participant sur un échange terminé. La
-// cible est l'autre partie de l'échange, déduite automatiquement.
+
 func CreateReview(ctx context.Context, db *sql.DB, exchangeID, authorID, note int, commentaire string) (*Review, error) {
 	if err := validateNote(note); err != nil {
 		return nil, err
@@ -59,7 +58,6 @@ func CreateReview(ctx context.Context, db *sql.DB, exchangeID, authorID, note in
 	return review, nil
 }
 
-// GetUserReviews renvoie les avis reçus par un utilisateur.
 func GetUserReviews(ctx context.Context, db *sql.DB, userID int) ([]Review, error) {
 	if _, err := SelectUserByID(ctx, db, userID); err != nil {
 		return nil, err
@@ -67,7 +65,6 @@ func GetUserReviews(ctx context.Context, db *sql.DB, userID int) ([]Review, erro
 	return SelectReviewsByTargetID(ctx, db, userID)
 }
 
-// GetServiceReviews renvoie les avis reçus par le prestataire d'un service.
 func GetServiceReviews(ctx context.Context, db *sql.DB, serviceID int) ([]Review, error) {
 	if _, err := SelectServiceByID(ctx, db, serviceID); err != nil {
 		return nil, err

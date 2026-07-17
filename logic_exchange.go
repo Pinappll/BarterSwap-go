@@ -5,10 +5,6 @@ import (
 	"database/sql"
 )
 
-// canTransition définit les transitions de statut autorisées pour un échange.
-//
-//	pending  -> accepted | rejected | cancelled
-//	accepted -> completed | cancelled
 func canTransition(from, to string) bool {
 	switch from {
 	case "pending":
@@ -20,10 +16,6 @@ func canTransition(from, to string) bool {
 	}
 }
 
-// canPerformTransition vérifie que actingUserID a le droit de déclencher la
-// transition demandée : l'offreur accepte ou refuse, le demandeur marque comme
-// terminé (pour qu'il ne s'auto-valide pas ses crédits), et les deux peuvent
-// annuler.
 func canPerformTransition(exchange Exchange, actingUserID int, to string) error {
 	switch to {
 	case "accepted", "rejected":

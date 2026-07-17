@@ -6,9 +6,6 @@ import (
 	"strings"
 )
 
-// creditBienvenue est le nombre de crédits-temps offerts à la création
-// d'un compte, pour permettre les premiers échanges avant d'avoir rendu
-// service à quiconque.
 const creditBienvenue = 10
 
 func validatePseudo(pseudo string) error {
@@ -28,8 +25,6 @@ func RegisterUser(ctx context.Context, db *sql.DB, user *User) error {
 	return InsertUser(ctx, db, user)
 }
 
-// GetUserProfile renvoie le profil public d'un utilisateur, compétences
-// incluses.
 func GetUserProfile(ctx context.Context, db *sql.DB, id int) (*User, error) {
 	user, err := SelectUserByID(ctx, db, id)
 	if err != nil {
@@ -45,8 +40,6 @@ func GetUserProfile(ctx context.Context, db *sql.DB, id int) (*User, error) {
 	return user, nil
 }
 
-// UpdateUserProfile remplace pseudo/bio/ville du profil targetID, à
-// condition que requesterID soit bien le propriétaire du profil.
 func UpdateUserProfile(ctx context.Context, db *sql.DB, targetID, requesterID int, update User) (*User, error) {
 	if err := requireOwner(targetID, requesterID); err != nil {
 		return nil, err

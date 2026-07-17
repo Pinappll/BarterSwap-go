@@ -26,8 +26,6 @@ func SelectSkillsByUserID(ctx context.Context, db *sql.DB, userID int) ([]Skill,
 	return skills, rows.Err()
 }
 
-// ReplaceSkills écrase l'intégralité des compétences d'un utilisateur par la
-// liste donnée (sémantique PUT : pas d'ajout/fusion individuelle).
 func ReplaceSkills(ctx context.Context, db *sql.DB, userID int, skills []Skill) error {
 	tx, err := db.BeginTx(ctx, nil)
 	if err != nil {

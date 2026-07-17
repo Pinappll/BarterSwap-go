@@ -1,10 +1,5 @@
-### BarterSwap — requêtes de test
-### Nécessite l'extension VSCode "REST Client" (humao.rest-client).
-### Cliquer sur "Send Request" au-dessus de chaque bloc pour l'exécuter.
-
 @baseUrl = http://localhost:8080
 
-### Ping
 GET {{baseUrl}}/ping
 
 
@@ -12,18 +7,18 @@ GET {{baseUrl}}/ping
 ### Utilisateurs
 ### =========================================================
 
-### Créer un utilisateur (10 crédits de bienvenue attribués)
+### Créer un utilisateur
 # @name createUser
 POST {{baseUrl}}/api/users
 Content-Type: application/json
 
 {
-  "pseudo": "joshua",
+  "pseudo": "John Doe",
   "bio": "Développeur Go",
   "ville": "Paris"
 }
 
-### Créer un utilisateur avec pseudo vide -> 400
+### Créer un utilisateur avec pseudo vide
 POST {{baseUrl}}/api/users
 Content-Type: application/json
 
@@ -34,7 +29,7 @@ Content-Type: application/json
 ### ID de l'utilisateur créé plus haut, réutilisé dans les requêtes suivantes
 @userId = {{createUser.response.body.$.id}}
 
-### Créer un second utilisateur (pour tester les cas d'accès refusé)
+### Créer un second utilisateur
 # @name createOtherUser
 POST {{baseUrl}}/api/users
 Content-Type: application/json
@@ -49,16 +44,16 @@ Content-Type: application/json
 ### Récupérer le profil public
 GET {{baseUrl}}/api/users/{{userId}}
 
-### Récupérer un profil inexistant -> 404
+### Récupérer un profil inexistant
 GET {{baseUrl}}/api/users/999999999
 
-### Modifier son profil (X-User-ID doit correspondre à {{userId}})
+### Modifier son profil
 PUT {{baseUrl}}/api/users/{{userId}}
 Content-Type: application/json
 X-User-ID: {{userId}}
 
 {
-  "pseudo": "joshua_updated",
+  "pseudo": "john Boe",
   "bio": "Développeur Go passionné",
   "ville": "Nantes"
 }
@@ -72,7 +67,7 @@ X-User-ID: {{otherUserId}}
   "pseudo": "usurpation"
 }
 
-### Modifier un profil sans header X-User-ID -> 401
+### Modifier un profil sans header X-User-ID
 PUT {{baseUrl}}/api/users/{{userId}}
 Content-Type: application/json
 
@@ -85,10 +80,10 @@ Content-Type: application/json
 ### Compétences
 ### =========================================================
 
-### Récupérer les compétences (vide au départ)
+### Récupérer les compétences
 GET {{baseUrl}}/api/users/{{userId}}/skills
 
-### Définir ses compétences (écrase la liste existante)
+### Définir ses compétences
 PUT {{baseUrl}}/api/users/{{userId}}/skills
 Content-Type: application/json
 X-User-ID: {{userId}}
@@ -98,7 +93,7 @@ X-User-ID: {{userId}}
   { "nom": "Cuisine", "niveau": "débutant" }
 ]
 
-### Niveau invalide -> 400
+### Niveau invalide
 PUT {{baseUrl}}/api/users/{{userId}}/skills
 Content-Type: application/json
 X-User-ID: {{userId}}
@@ -107,7 +102,7 @@ X-User-ID: {{userId}}
   { "nom": "Bricolage", "niveau": "pro" }
 ]
 
-### Modifier les compétences d'un autre utilisateur -> 403
+### Modifier les compétences d'un autre utilisateur
 PUT {{baseUrl}}/api/users/{{userId}}/skills
 Content-Type: application/json
 X-User-ID: {{otherUserId}}
@@ -124,16 +119,15 @@ X-User-ID: {{otherUserId}}
 ### Statistiques de l'utilisateur
 GET {{baseUrl}}/api/users/{{userId}}/stats
 
-### Statistiques d'un utilisateur inexistant -> 404
+### Statistiques d'un utilisateur inexistant
 GET {{baseUrl}}/api/users/999999999/stats
 
 
 ### =========================================================
 ### Services (annonces)
 ### =========================================================
-### {{userId}} possède les compétences Jardinage/Cuisine définies plus haut.
 
-### Créer un service SANS la compétence requise -> 400
+### Créer un service SANS la compétence requise
 POST {{baseUrl}}/api/services
 Content-Type: application/json
 X-User-ID: {{userId}}
@@ -145,7 +139,7 @@ X-User-ID: {{userId}}
   "credits": 2
 }
 
-### Créer un service sans header X-User-ID -> 401
+### Créer un service sans header X-User-ID
 POST {{baseUrl}}/api/services
 Content-Type: application/json
 
@@ -247,8 +241,7 @@ GET {{baseUrl}}/api/services/{{serviceId}}
 ### =========================================================
 ### Échanges
 ### =========================================================
-### {{userId}} = offreur (a la compétence Jardinage), {{otherUserId}} = demandeur.
-### Un service dédié est recréé ici car celui du bloc précédent a été supprimé.
+
 
 ### @name createExchangeService
 POST {{baseUrl}}/api/services
@@ -292,6 +285,18 @@ X-User-ID: {{otherUserId}}
 ### Détail de l'échange (participant autorisé)
 GET {{baseUrl}}/api/exchanges/{{exchangeId}}
 X-User-ID: {{userId}}
+
+### Un tiers non participant ne peut pas consulter l'échange -> 403
+# @name createStranger
+POST {{baseUrl}}/api/users
+Content-Type: application/json
+
+{ "pseudo": "stranger" }
+
+@strangerId = {{createStranger.response.body.$.id}}
+
+GET {{baseUrl}}/api/exchanges/{{exchangeId}}
+X-User-ID: {{strangerId}}
 
 ### Liste de mes échanges (demandeur)
 GET {{baseUrl}}/api/exchanges
@@ -361,6 +366,42 @@ X-User-ID: {{otherUserId}}
 GET {{baseUrl}}/api/users/{{otherUserId}}
 
 
+### --- Flux annulation depuis pending (rien n'était bloqué, rien à rembourser) ---
+
+# @name createServiceForPendingCancel
+POST {{baseUrl}}/api/services
+Content-Type: application/json
+X-User-ID: {{userId}}
+
+{
+  "titre": "Service annulé avant acceptation",
+  "categorie": "Jardinage",
+  "duree_minutes": 20,
+  "credits": 2
+}
+
+@pendingCancelServiceId = {{createServiceForPendingCancel.response.body.$.id}}
+
+# @name createExchangeForPendingCancel
+POST {{baseUrl}}/api/exchanges
+Content-Type: application/json
+X-User-ID: {{otherUserId}}
+
+{ "service_id": {{pendingCancelServiceId}} }
+
+@pendingCancelExchangeId = {{createExchangeForPendingCancel.response.body.$.id}}
+
+### Solde du demandeur avant annulation (échange encore pending, rien de bloqué)
+GET {{baseUrl}}/api/users/{{otherUserId}}
+
+### Annuler directement depuis pending (jamais accepté)
+PUT {{baseUrl}}/api/exchanges/{{pendingCancelExchangeId}}/cancel
+X-User-ID: {{otherUserId}}
+
+### Le solde n'a pas changé (rien n'avait été bloqué)
+GET {{baseUrl}}/api/users/{{otherUserId}}
+
+
 ### --- Flux refus (depuis pending, rien à rembourser) ---
 
 # @name createServiceForReject
@@ -386,9 +427,50 @@ X-User-ID: {{otherUserId}}
 
 @rejectExchangeId = {{createExchangeForReject.response.body.$.id}}
 
-### Refuser la demande
+### Refuser par le mauvais utilisateur (le demandeur lui-même) -> 403
+PUT {{baseUrl}}/api/exchanges/{{rejectExchangeId}}/reject
+X-User-ID: {{otherUserId}}
+
+### Refuser la demande (par l'offreur) -> 200
 PUT {{baseUrl}}/api/exchanges/{{rejectExchangeId}}/reject
 X-User-ID: {{userId}}
+
+
+### --- Suppression d'un service avec échange actif : bloquée (409) ---
+
+# @name createServiceForDeleteBlock
+POST {{baseUrl}}/api/services
+Content-Type: application/json
+X-User-ID: {{userId}}
+
+{
+  "titre": "Service protégé par un échange actif",
+  "categorie": "Jardinage",
+  "duree_minutes": 30,
+  "credits": 2
+}
+
+@deleteBlockServiceId = {{createServiceForDeleteBlock.response.body.$.id}}
+
+# @name createExchangeForDeleteBlock
+POST {{baseUrl}}/api/exchanges
+Content-Type: application/json
+X-User-ID: {{otherUserId}}
+
+{ "service_id": {{deleteBlockServiceId}} }
+
+@deleteBlockExchangeId = {{createExchangeForDeleteBlock.response.body.$.id}}
+
+### Accepter (bloque les crédits, l'échange passe en "accepted")
+PUT {{baseUrl}}/api/exchanges/{{deleteBlockExchangeId}}/accept
+X-User-ID: {{userId}}
+
+### Tentative de suppression du service -> 409 (protège la trace des crédits déjà bloqués)
+DELETE {{baseUrl}}/api/services/{{deleteBlockServiceId}}
+X-User-ID: {{userId}}
+
+### Le service existe toujours (suppression refusée, pas de perte de données)
+GET {{baseUrl}}/api/services/{{deleteBlockServiceId}}
 
 
 ### =========================================================

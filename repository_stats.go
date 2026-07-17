@@ -6,10 +6,6 @@ import (
 	"errors"
 )
 
-// SelectUserStats agrège en une seule requête les données de plusieurs
-// tables (services, exchanges, reviews, credit_transactions) pour un
-// utilisateur donné. total_depense nette les "spend" par leurs "refund"
-// correspondants : un échange annulé/refusé ne compte pas comme dépensé.
 func SelectUserStats(ctx context.Context, db *sql.DB, userID int) (*UserStats, error) {
 	query := `
 		SELECT

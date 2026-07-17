@@ -46,8 +46,6 @@ func SelectUserByID(ctx context.Context, db *sql.DB, id int) (*User, error) {
 	return &user, nil
 }
 
-// UpdateUser remplace pseudo/bio/ville d'un utilisateur existant (sémantique
-// PUT : remplacement complet, pas de fusion champ par champ).
 func UpdateUser(ctx context.Context, db *sql.DB, user *User) error {
 	query := `
 		UPDATE users

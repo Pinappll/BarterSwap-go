@@ -28,8 +28,6 @@ func GetUserSkills(ctx context.Context, db *sql.DB, userID int) ([]Skill, error)
 	return SelectSkillsByUserID(ctx, db, userID)
 }
 
-// SetUserSkills remplace les compétences de targetID, à condition que
-// requesterID en soit bien le propriétaire.
 func SetUserSkills(ctx context.Context, db *sql.DB, targetID, requesterID int, skills []Skill) ([]Skill, error) {
 	if err := requireOwner(targetID, requesterID); err != nil {
 		return nil, err

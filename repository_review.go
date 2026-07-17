@@ -51,8 +51,6 @@ func SelectReviewsByTargetID(ctx context.Context, db *sql.DB, targetID int) ([]R
 	return reviews, rows.Err()
 }
 
-// SelectReviewsByServiceID renvoie les avis reçus par le prestataire pour ce
-// service (target_id = owner_id), pas ceux qu'il a laissés à ses clients.
 func SelectReviewsByServiceID(ctx context.Context, db *sql.DB, serviceID int) ([]Review, error) {
 	query := `
 		SELECT r.id, r.exchange_id, r.author_id, r.target_id, r.note, COALESCE(r.commentaire, ''), r.created_at

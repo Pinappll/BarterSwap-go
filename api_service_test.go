@@ -218,3 +218,52 @@ func TestAPI_DeleteService(t *testing.T) {
 		}
 	})
 }
+
+// TestAPI_DeleteServiceWithActiveExchange couvre le bug corrigé où
+// supprimer un service ayant un échange pending/accepted cascadait sur
+// exchanges puis credit_transactions, effaçant la trace de crédits déjà
+// bloqués chez le demandeur sans aucun moyen de les lui restituer.
+func TestAPI_DeleteServiceWithActiveExchange(t *testing.T) {
+	if !dbAvailable {
+		t.Skip("base de données indisponible")
+	}
+	router := newRouter(testDB)
+
+	t.Run("échange pending -> suppression refusée (409)", func(t *testing.T) {
+		sc := setupExchangeScenario(t, router, "Informatique", 3)
+		createTestExchange(t, router, sc.Requester.ID, sc.Service.ID)
+
+		rec := doRequest(router, http.MethodDelete, fmt.Sprintf("/api/services/%d", sc.Service.ID), "", sc.Provider.ID)
+		if rec.Code != http.StatusConflict {
+			t.Errorf("code = %d, attendu 409 (%s)", rec.Code, rec.Body.String())
+		}
+	})
+
+	t.Run("échange accepted -> suppression refusée (409), crédits restent traçables", func(t *testing.T) {
+		sc := setupExchangeScenario(t, router, "Tutorat", 4)
+		exchange := createTestExchange(t, router, sc.Requester.ID, sc.Service.ID)
+		doRequest(router, http.MethodPut, fmt.Sprintf("/api/exchanges/%d/accept", exchange.ID), "", sc.Provider.ID)
+
+		rec := doRequest(router, http.MethodDelete, fmt.Sprintf("/api/services/%d", sc.Service.ID), "", sc.Provider.ID)
+		if rec.Code != http.StatusConflict {
+			t.Errorf("code = %d, attendu 409 (%s)", rec.Code, rec.Body.String())
+		}
+
+		getRec := doRequest(router, http.MethodGet, fmt.Sprintf("/api/services/%d", sc.Service.ID), "", 0)
+		if getRec.Code != http.StatusOK {
+			t.Errorf("le service devrait toujours exister après un refus de suppression, code = %d", getRec.Code)
+		}
+	})
+
+	t.Run("échange completed -> suppression autorisée", func(t *testing.T) {
+		sc := setupExchangeScenario(t, router, "Sport", 2)
+		exchange := createTestExchange(t, router, sc.Requester.ID, sc.Service.ID)
+		doRequest(router, http.MethodPut, fmt.Sprintf("/api/exchanges/%d/accept", exchange.ID), "", sc.Provider.ID)
+		doRequest(router, http.MethodPut, fmt.Sprintf("/api/exchanges/%d/complete", exchange.ID), "", sc.Requester.ID)
+
+		rec := doRequest(router, http.MethodDelete, fmt.Sprintf("/api/services/%d", sc.Service.ID), "", sc.Provider.ID)
+		if rec.Code != http.StatusNoContent {
+			t.Errorf("code = %d, attendu 204 (un échange terminé ne doit pas bloquer la suppression)", rec.Code)
+		}
+	})
+}

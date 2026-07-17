@@ -7,8 +7,6 @@ import (
 	"fmt"
 )
 
-// ServiceFilters porte les filtres optionnels de GET /api/services. Un champ
-// vide signifie "pas de filtre sur ce critère".
 type ServiceFilters struct {
 	Categorie string
 	Ville     string
@@ -50,9 +48,6 @@ func SelectServiceByID(ctx context.Context, db querier, id int) (*Service, error
 	return &s, nil
 }
 
-// UpdateService remplace les champs descriptifs/commerciaux d'une annonce.
-// "actif" n'est volontairement pas modifiable ici : aucune fonctionnalité de
-// mise en pause n'est demandée par le sujet, seule la suppression existe.
 func UpdateService(ctx context.Context, db *sql.DB, s *Service) error {
 	query := `
 		UPDATE services
@@ -86,11 +81,6 @@ func DeleteService(ctx context.Context, db *sql.DB, id int) error {
 	return nil
 }
 
-// SelectServices liste les annonces actives, avec filtrage serveur optionnel
-// par catégorie (égalité), ville (insensible à la casse) et recherche
-// textuelle (titre/description). Les conditions sont ajoutées
-// dynamiquement mais toujours paramétrées, jamais concaténées dans la
-// requête, pour éviter toute injection SQL.
 func SelectServices(ctx context.Context, db *sql.DB, f ServiceFilters) ([]Service, error) {
 	query := `
 		SELECT id, provider_id, titre, COALESCE(description, ''), categorie,

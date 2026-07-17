@@ -78,8 +78,6 @@ func HandleGetExchange(db *sql.DB) http.HandlerFunc {
 	}
 }
 
-// exchangeActionHandler factorise les endpoints accept/reject/complete/cancel,
-// qui partagent la même mécanique : lire l'id, exiger l'auth, déléguer.
 func exchangeActionHandler(
 	db *sql.DB,
 	action func(ctx context.Context, db *sql.DB, id, actingUserID int) (*Exchange, error),

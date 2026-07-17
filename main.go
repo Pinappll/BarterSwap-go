@@ -8,9 +8,7 @@ import (
 	"os"
 )
 
-// newRouter enregistre toutes les routes de l'API et les enveloppe dans la
-// chaîne de middlewares commune. Extrait de main() pour être réutilisé tel
-// quel par les tests d'intégration (httptest).
+
 func newRouter(db *sql.DB) http.Handler {
 	mux := http.NewServeMux()
 
@@ -72,7 +70,7 @@ func main() {
 
 	db, err := InitDB(connStr)
 	if err != nil {
-		log.Fatalf("❌ Erreur de connexion à la base de données : %v", err)
+		log.Fatalf("Erreur de connexion à la base de données : %v", err)
 	}
 	defer db.Close()
 
@@ -81,8 +79,8 @@ func main() {
 		Handler: newRouter(db),
 	}
 
-	fmt.Println("🚀 Serveur démarré sur http://localhost:8080")
+	fmt.Println("Serveur démarré sur http://localhost:8080")
 	if err := server.ListenAndServe(); err != nil {
-		log.Fatalf("❌ Erreur du serveur HTTP : %v", err)
+		log.Fatalf("Erreur du serveur HTTP : %v", err)
 	}
 }

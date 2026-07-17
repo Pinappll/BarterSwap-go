@@ -7,8 +7,6 @@ import (
 	"testing"
 )
 
-// exchangeScenario regroupe un prestataire (avec la compétence requise), un
-// service et un demandeur fraîchement créés pour un test donné.
 type exchangeScenario struct {
 	Provider  User
 	Requester User

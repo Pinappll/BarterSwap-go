@@ -17,11 +17,6 @@ import (
 	_ "github.com/lib/pq"
 )
 
-// testDB est une connexion à une vraie base Postgres (celle définie par les
-// variables d'environnement DB_*, comme pour main()). Ces tests d'intégration
-// exercent la chaîne complète handler -> logic -> repository -> DB via
-// httptest, plutôt que des mocks : aucune dépendance externe supplémentaire
-// n'est autorisée par le sujet pour simuler la base.
 var (
 	testDB      *sql.DB
 	dbAvailable bool
@@ -70,9 +65,6 @@ func uniqueSuffix() string {
 	return strconv.FormatInt(time.Now().UnixNano(), 36)
 }
 
-// createTestUser crée un utilisateur via l'API elle-même (pas d'insertion
-// SQL directe) et programme son nettoyage à la fin du test. Les compétences
-// sont supprimées en cascade par la contrainte FK.
 func createTestUser(t *testing.T, router http.Handler, pseudoPrefix string) User {
 	t.Helper()
 
