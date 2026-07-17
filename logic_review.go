@@ -12,7 +12,6 @@ func validateNote(note int) error {
 	return nil
 }
 
-
 func CreateReview(ctx context.Context, db *sql.DB, exchangeID, authorID, note int, commentaire string) (*Review, error) {
 	if err := validateNote(note); err != nil {
 		return nil, err

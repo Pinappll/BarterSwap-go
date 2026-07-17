@@ -8,7 +8,6 @@ import (
 	"os"
 )
 
-
 func newRouter(db *sql.DB) http.Handler {
 	mux := http.NewServeMux()
 
